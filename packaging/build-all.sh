@@ -9,7 +9,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 OUT="$HERE/out"
 mkdir -p "$OUT"
 
-NAMES=(enyo-accounts)
+NAMES=(enyo-accounts enyo-contactsui)
 
 want() {  # $1 = name; true if no filter args were given, or $1 is among them
   [ "${#FILTER[@]}" -eq 0 ] && return 0
