@@ -10,6 +10,12 @@ enyo.windows.manager = {
 	// return a list of valid (still existing) windows.
 	getWindows: function() {
 		var app = this.getRootWindow();
+		if (typeof(app) === "undefined" || 
+		    typeof(app.enyo) === "undefined" || 
+		    typeof(app.enyo.windows) === "undefined" || 
+		    typeof(app.enyo.windows.manager) === "undefined") {
+				return [];
+		}
 		var am = app.enyo.windows.manager;
 		var windows = am._windowList;
 		// note: check for validity of window since we do not know if a spawned
@@ -168,9 +174,30 @@ enyo.windows.manager = {
 // Setup windows api during enyo boot process:
 enyo.requiresWindow(function() {
 	// Assign windowParams.
-	var params = enyo.windowParams || (window.PalmSystem && PalmSystem.launchParams);
+	//
+	// Order matters here. ?enyoWindowParams= is written by openWindow() above and is
+	// therefore per-window data unambiguously meant for this window. It has to be
+	// consulted BEFORE PalmSystem.launchParams, which is per-app-instance data.
+	//
+	// On legacy webOS the two amounted to the same thing: LunaSysMgr put the window's
+	// own parameters in launchParams, so reading it first was correct and the URL was
+	// only a backstop. Under WAM they are different objects. WAM hands every page,
+	// including a cross-app child opened with window.open(), a launchParams of the form
+	//
+	//     {"displayAffinity":0,"instanceId":"..."}
+	//
+	// which is non-empty and therefore truthy. Reading it first satisfied the old
+	// "!params" guard, so the URL was never consulted and every cross-app window came
+	// up with windowParams = {displayAffinity, instanceId} rather than what its opener
+	// passed. Account validators then saw no template, fell back to a bare
+	// {templateId:...} stub, and the Accounts app showed an empty capability list and
+	// threw in modify.js on "Create Account".
+	var params = enyo.windowParams;
 	if(!params && enyo.args.enyoWindowParams) {
 		params = decodeURIComponent(enyo.args.enyoWindowParams);
+	}
+	if(!params && window.PalmSystem) {
+		params = PalmSystem.launchParams;
 	}
 	enyo.windows.finishOpenWindow(window, params);
 	//
